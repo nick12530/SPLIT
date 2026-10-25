@@ -2,178 +2,189 @@
 
 @layer base {
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     min-height: 100vh;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 }
 
 .font-mono {
-  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-feature-settings: 'tnum' on, 'zero' on;
+  letter-spacing: -0.01em;
 }
 
 /* =========================================================
-   iOS GLASSMORPHISM & DUAL THEME ENGINE (LIGHT & DARK)
+   AUTHENTIC BESPOKE THEME ENGINE
+   Dark: Deep titanium charcoal & obsidian (#0d0e13 / #14151e)
+   Light: Architectural paper & clean slate (#f8fafc / #ffffff)
    ========================================================= */
 
-/* Light Mode Ambiance */
+/* Light Theme: Clean Architectural Surface */
 .theme-light {
-  background-color: #eef6fd;
+  background-color: #f8fafc;
   background-image: 
-    radial-gradient(at 0% 0%, rgba(186, 230, 253, 0.5) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(224, 242, 254, 0.8) 0px, transparent 50%),
-    radial-gradient(at 50% 100%, rgba(207, 232, 255, 0.6) 0px, transparent 60%);
+    radial-gradient(at 0% 0%, rgba(241, 245, 249, 0.9) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(226, 232, 240, 0.7) 0px, transparent 60%);
   color: #0f172a;
 }
 
-/* Dark Mode Ambiance (Premium Charcoal Grey & Crisp White) */
+/* Dark Theme: Bespoke Executive Charcoal Grey & White */
 .theme-dark {
-  background-color: #121214;
+  background-color: #0c0d12;
   background-image: 
-    radial-gradient(at 0% 0%, rgba(38, 38, 44, 0.6) 0px, transparent 50%),
-    radial-gradient(at 100% 10%, rgba(30, 30, 35, 0.7) 0px, transparent 50%),
-    radial-gradient(at 50% 100%, rgba(22, 22, 26, 0.6) 0px, transparent 60%);
+    radial-gradient(800px 400px at 50% 0px, rgba(28, 30, 40, 0.4), transparent 100%),
+    radial-gradient(600px 600px at 100% 100%, rgba(18, 20, 28, 0.5), transparent 100%);
   color: #ffffff;
 }
 
-/* iOS Frosted Glass Panel */
+/* Primary Glass & Surface Panels */
 .theme-light .ios-glass {
-  background: rgba(255, 255, 255, 0.76);
-  backdrop-filter: blur(28px) saturate(190%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%);
-  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
   box-shadow: 
-    0 20px 40px -15px rgba(2, 132, 199, 0.12),
-    0 0 0 1px rgba(255, 255, 255, 0.6);
+    0 1px 3px 0 rgba(0, 0, 0, 0.04),
+    0 16px 36px -12px rgba(15, 23, 42, 0.07);
 }
 
 .theme-dark .ios-glass {
-  background: rgba(22, 22, 26, 0.82);
-  backdrop-filter: blur(28px) saturate(190%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(17, 18, 23, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 
-    0 24px 48px -15px rgba(0, 0, 0, 0.75),
-    0 0 0 1px rgba(255, 255, 255, 0.08);
+    0 1px 0 0 rgba(255, 255, 255, 0.05) inset,
+    0 20px 48px -12px rgba(0, 0, 0, 0.85);
 }
 
-/* iOS Glass Card */
+/* Sub-card & Section Surfaces */
 .theme-light .ios-glass-card {
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(224, 242, 254, 0.9);
-  box-shadow: 0 4px 16px -2px rgba(14, 165, 233, 0.08);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03), 0 6px 16px -4px rgba(15, 23, 42, 0.04);
 }
 
 .theme-dark .ios-glass-card {
-  background: rgba(30, 30, 36, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 6px 24px -2px rgba(0, 0, 0, 0.5);
+  background: #14151b;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 
+    0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
+    0 8px 24px -4px rgba(0, 0, 0, 0.55);
 }
 
-/* iOS Segmented Control Bar */
+/* Segmented Control Bar */
 .theme-light .ios-segmented {
-  background: rgba(224, 242, 254, 0.7);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(186, 230, 253, 0.6);
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
 }
 
 .theme-dark .ios-segmented {
-  background: rgba(24, 24, 28, 0.85);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: #121319;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.03) inset;
 }
 
-/* iOS Inset Input */
+/* Precision Inset Inputs */
 .theme-light .ios-input {
-  background: rgba(240, 249, 255, 0.85);
-  border: 1px solid rgba(186, 230, 253, 0.7);
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
   color: #0f172a;
+  transition: all 0.15s ease;
 }
 .theme-light .ios-input:focus {
   background: #ffffff;
-  border-color: #0ea5e9;
-  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.2);
+  border-color: #0284c7;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
 }
 
 .theme-dark .ios-input {
-  background: rgba(28, 28, 34, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  color: #ffffff;
+  background: #171821;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+  transition: all 0.15s ease;
 }
 .theme-dark .ios-input:focus {
-  background: rgba(38, 38, 46, 0.95);
+  background: #1c1e29;
   border-color: #38bdf8;
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
 }
 
-/* Bolder Primary Button with iOS Tactile Press */
+/* Tactile Primary Button */
 .ios-btn-primary {
-  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+  background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%);
   color: #ffffff;
-  font-weight: 800;
-  box-shadow: 0 8px 24px -4px rgba(14, 165, 233, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  transition: all 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    0 1px 0 0 rgba(255, 255, 255, 0.25) inset,
+    0 2px 8px rgba(2, 132, 199, 0.35);
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .ios-btn-primary:hover {
-  transform: translateY(-1px) scale(1.01);
-  box-shadow: 0 10px 28px -4px rgba(14, 165, 233, 0.55);
+  background: linear-gradient(180deg, #0369a1 0%, #075985 100%);
+  box-shadow: 
+    0 1px 0 0 rgba(255, 255, 255, 0.3) inset,
+    0 4px 14px rgba(2, 132, 199, 0.45);
+  transform: translateY(-0.5px);
 }
 
 .ios-btn-primary:active {
-  transform: translateY(1px) scale(0.98);
+  transform: translateY(1px);
+  box-shadow: 0 1px 4px rgba(2, 132, 199, 0.3);
 }
 
-/* Bolder Secondary / Tactile Glass Button */
+/* Secondary Button */
 .theme-light .ios-btn-secondary {
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(224, 242, 254, 0.9);
-  color: #0369a1;
-  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.08);
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #334155;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 .theme-light .ios-btn-secondary:hover {
-  background: #ffffff;
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.15);
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #94a3b8;
 }
 
 .theme-dark .ios-btn-secondary {
-  background: rgba(36, 36, 42, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  background: #1c1d25;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  color: #e2e8f0;
+  box-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.04) inset;
 }
 .theme-dark .ios-btn-secondary:hover {
-  background: rgba(48, 48, 56, 0.95);
+  background: #242630;
   color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.16);
 }
 
 /* =========================================================
-   TACTILE THERMAL RECEIPT (AUTHENTIC THERMAL PAPER & PERFORATION)
+   AUTHENTIC THERMAL RECEIPT (WARM PAPER & CRISP PERFORATION)
    ========================================================= */
 
 .receipt-paper-textured {
-  background-color: #faf9f5;
+  background-color: #fbf9f4;
   background-image: 
-    radial-gradient(#e2dac8 0.6px, transparent 0.6px),
-    linear-gradient(180deg, #fdfcf9 0%, #f7f4ea 50%, #fdfcf9 100%),
-    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.012) 3px, rgba(0, 0, 0, 0.012) 4px);
-  background-size: 6px 6px, 100% 100%, 100% 4px;
-  color: #1a1715;
+    radial-gradient(#ded7c6 0.5px, transparent 0.5px),
+    linear-gradient(180deg, #fefdfb 0%, #f7f4ec 50%, #fcfbf7 100%),
+    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 0, 0, 0.008) 3px, rgba(0, 0, 0, 0.008) 4px);
+  background-size: 8px 8px, 100% 100%, 100% 4px;
+  color: #1c1917;
   box-shadow: 
-    0 1px 3px rgba(0, 0, 0, 0.08),
-    0 12px 32px -4px rgba(0, 0, 0, 0.22),
-    0 24px 60px -12px rgba(0, 0, 0, 0.35),
-    inset 0 0 40px rgba(220, 210, 190, 0.18);
-  border-left: 1px solid #e8e0d0;
-  border-right: 1px solid #e8e0d0;
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 16px 36px -8px rgba(0, 0, 0, 0.28),
+    0 32px 64px -16px rgba(0, 0, 0, 0.4),
+    inset 0 0 50px rgba(210, 200, 180, 0.15);
+  border-left: 1px solid #e7dfd1;
+  border-right: 1px solid #e7dfd1;
   position: relative;
-  filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.18));
 }
 
 /* Crisp SVG Sawtooth Perforation for Genuine Paper Tear */
@@ -181,38 +192,38 @@
   position: relative;
   width: 100%;
   height: 12px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 10' preserveAspectRatio='none'%3E%3Cpolygon points='0,10 10,0 20,10' fill='%23faf9f5'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 10' preserveAspectRatio='none'%3E%3Cpolygon points='0,10 10,0 20,10' fill='%23fbf9f4'/%3E%3C/svg%3E");
   background-repeat: repeat-x;
   background-size: 14px 10px;
   margin-top: -10px;
-  filter: drop-shadow(0 -1px 0.5px rgba(0, 0, 0, 0.08));
+  filter: drop-shadow(0 -1px 0.5px rgba(0, 0, 0, 0.06));
 }
 
 .receipt-sawtooth-bottom {
   position: relative;
   width: 100%;
   height: 12px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 10' preserveAspectRatio='none'%3E%3Cpolygon points='0,0 10,10 20,0' fill='%23faf9f5'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 10' preserveAspectRatio='none'%3E%3Cpolygon points='0,0 10,10 20,0' fill='%23fbf9f4'/%3E%3C/svg%3E");
   background-repeat: repeat-x;
   background-size: 14px 10px;
   margin-bottom: -10px;
-  filter: drop-shadow(0 1px 0.5px rgba(0, 0, 0, 0.08));
+  filter: drop-shadow(0 1px 0.5px rgba(0, 0, 0, 0.06));
 }
 
 /* Realistic Thermal Receipt Paper Feed Animation */
 @keyframes thermalRollOut {
   0% {
-    transform: translateY(-90px) scale(0.96);
-    opacity: 0.05;
-    clip-path: inset(0 0 95% 0);
+    transform: translateY(-80px) scale(0.97);
+    opacity: 0.1;
+    clip-path: inset(0 0 90% 0);
   }
-  50% {
-    transform: translateY(6px) scale(1.005);
+  60% {
+    transform: translateY(4px) scale(1.002);
     opacity: 0.95;
-    clip-path: inset(0 0 10% 0);
+    clip-path: inset(0 0 5% 0);
   }
-  80% {
-    transform: translateY(-2px);
+  85% {
+    transform: translateY(-1px);
     clip-path: inset(0 0 0% 0);
   }
   100% {
@@ -223,21 +234,56 @@
 }
 
 .animate-print {
-  animation: thermalRollOut 0.65s cubic-bezier(0.2, 0.9, 0.25, 1) forwards;
+  animation: thermalRollOut 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Authentic Dot Leaders for Receipt Line Alignment */
+.receipt-dots {
+  flex-grow: 1;
+  border-bottom: 1.5px dotted #a8a29e;
+  margin-left: 6px;
+  margin-right: 6px;
+  margin-bottom: 3px;
+  opacity: 0.65;
+}
+
+/* Interactive Highlight for Participant Focus Lens */
+.participant-lens-highlight {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Scanner Laser Line Animation */
+@keyframes scanLaser {
+  0% {
+    top: 6%;
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.95;
+  }
+  100% {
+    top: 94%;
+    opacity: 0.3;
+  }
+}
+
+.animate-scan-line {
+  position: absolute;
+  animation: scanLaser 2.4s ease-in-out infinite alternate;
 }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(56, 189, 248, 0.3);
+  background: rgba(148, 163, 184, 0.25);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(14, 165, 233, 0.6);
+  background: rgba(148, 163, 184, 0.45);
 }

@@ -4,11 +4,11 @@ import {
   Trash2,
   Users,
   Check,
-  Utensils,
   AlertCircle,
   Edit2,
-  Receipt,
+  FileText,
   Sparkles,
+  ShoppingBag,
 } from 'lucide-react';
 import { ReceiptData, Participant, ReceiptItem, CURRENCIES } from '../types';
 import { BillSummary, formatCurrency } from '../utils/calculator';
@@ -49,6 +49,18 @@ export const ReceiptBuilder: React.FC<ReceiptBuilderProps> = ({
   const [itemQuantity, setItemQuantity] = useState(1);
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
 
+  // Focus Refs for seamless keyboard data-entry
+  const nameInputRef = React.useRef<HTMLInputElement>(null);
+  const priceInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Participant Focus Lens State (hovering highlights all items assigned to them)
+  const [highlightedParticipantId, setHighlightedParticipantId] = useState<string | null>(null);
+
+  // Editing Item Inline State
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editPrice, setEditPrice] = useState('');
+
   // Editing Bill Title State
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(receipt.billTitle);
@@ -77,6 +89,32 @@ export const ReceiptBuilder: React.FC<ReceiptBuilderProps> = ({
     setItemPrice('');
     setItemQuantity(1);
     setSelectedAssignees([]);
+    nameInputRef.current?.focus();
+  };
+
+  const handleStartEditItem = (item: ReceiptItem) => {
+    setEditingItemId(item.id);
+    setEditName(item.name);
+    setEditPrice(item.price.toString());
+  };
+
+  const handleSaveEditItem = (itemId: string) => {
+    const price = parseFloat(editPrice);
+    if (!editName.trim() || isNaN(price) || price <= 0) {
+      setEditingItemId(null);
+      return;
+    }
+
+    const updatedItems = receipt.items.map((it) =>
+      it.id === itemId ? { ...it, name: editName.trim(), price } : it
+    );
+    const newTotal = updatedItems.reduce((acc, it) => acc + it.price, 0);
+    onUpdateReceipt({
+      ...receipt,
+      items: updatedItems,
+      total: newTotal,
+    });
+    setEditingItemId(null);
   };
 
   const handleAddPersonSubmit = (e: React.FormEvent) => {
@@ -123,11 +161,11 @@ export const ReceiptBuilder: React.FC<ReceiptBuilderProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full ios-glass rounded-3xl p-4 sm:p-6 overflow-hidden transition-all shadow-xl">
+    <div className="flex flex-col h-full ios-glass rounded-2xl p-4 sm:p-5 transition-all">
       {/* Top Header: Editable Bill Title & Live Total */}
       <div
-        className={`flex items-center justify-between pb-3.5 mb-3 border-b ${
-          isDark ? 'border-[#2a2a34]' : 'border-sky-100'
+        className={`flex items-center justify-between pb-3.5 mb-3.5 border-b ${
+          isDark ? 'border-white/[0.08]' : 'border-slate-200/80'
         }`}
       >
         <div className="flex-1 min-w-0 pr-3">
@@ -139,11 +177,11 @@ export const ReceiptBuilder: React.FC<ReceiptBuilderProps> = ({
                 onChange={(e) => setTitleInput(e.target.value)}
                 autoFocus
                 onKeyDown={(e) => e.key === 'Enter' && handleSaveTitle()}
-                className="ios-input text-sm font-black px-3 py-1.5 rounded-xl w-full max-w-xs focus:outline-none"
+                className="ios-input text-sm font-bold px-3 py-1.5 rounded-lg w-full max-w-xs focus:outline-none"
               />
               <button
                 onClick={handleSaveTitle}
-                className="ios-btn-primary text-xs font-black px-3 py-1.5 rounded-xl cursor-pointer"
+                className="ios-btn-primary text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer"
               >
                 Save
               </button>
@@ -156,36 +194,36 @@ export const ReceiptBuilder: React.FC<ReceiptBuilderProps> = ({
                 setIsEditingTitle(true);
               }}
             >
-              <h2 className="text-lg font-black tracking-tight truncate">
+              <h2 className="text-base sm:text-lg font-bold tracking-tight truncate">
                 {receipt.billTitle}
               </h2>
               <Edit2
-                className={`w-4 h-4 transition-colors shrink-0 ${
+                className={`w-3.5 h-3.5 transition-colors shrink-0 ${
                   isDark
-                    ? 'text-zinc-500 group-hover:text-sky-400'
-                    : 'text-slate-400 group-hover:text-sky-600'
+                    ? 'text-zinc-500 group-hover:text-zinc-300'
+                    : 'text-slate-400 group-hover:text-slate-600'
                 }`}
               />
             </div>
           )}
           <p
-            className={`text-xs font-bold mt-0.5 ${
+            className={`text-xs mt-0.5 ${
               isDark ? 'text-zinc-400' : 'text-slate-500'
             }`}
           >
-            {receipt.items.length} item{receipt.items.length === 1 ? '' : 's'} • Tap title to rename
+            {receipt.items.length} item{receipt.items.length === 1 ? '' : 's'} · {receipt.date}
           </p>
         </div>
 
         <div className="text-right shrink-0">
           <span
-            className={`text-[10px] font-black uppercase tracking-wider block ${
+            className={`text-[10px] font-semibold uppercase tracking-wider block ${
               isDark ? 'text-zinc-400' : 'text-slate-500'
             }`}
           >
-            Total Due ({receipt.currency})
+            Total Due
           </span>
-          <span className="font-mono text-lg sm:text-2xl font-black text-sky-500">
+          <span className="font-mono text-xl sm:text-2xl font-bold tracking-tight text-sky-500">
             {formatCurrency(summary.grandTotal, receipt.currency)}
           </span>
         </div>
@@ -193,65 +231,80 @@ export const ReceiptBuilder: React.FC<ReceiptBuilderProps> = ({
 
       {/* Diners Management Bar */}
       <div
-        className={`mb-3.5 ios-glass-card rounded-2xl p-3 sm:p-4 border ${
-          isDark ? 'border-[#2a2a34]' : 'border-sky-100'
+        className={`mb-3.5 ios-glass-card rounded-xl p-3 sm:p-4 border ${
+          isDark ? 'border-white/[0.08]' : 'border-slate-200/80'
         }`}
       >
         <div className="flex items-center justify-between mb-2.5">
-          <span className="text-xs font-black flex items-center gap-2 tracking-wide">
-            <Users className="w-4 h-4 text-sky-500" />
-            <span>People Splitting ({participants.length})</span>
+          <span className="text-xs font-bold flex items-center gap-1.5 text-sky-500">
+            <Users className="w-3.5 h-3.5" />
+            <span className={isDark ? 'text-zinc-200' : 'text-slate-800'}>
+              Participants ({participants.length})
+            </span>
           </span>
 
           {!showAddPersonInput && (
             <button
               onClick={() => setShowAddPersonInput(true)}
-              className="text-xs font-black text-sky-500 hover:text-sky-400 flex items-center gap-1 cursor-pointer transition-colors"
+              className="text-xs font-semibold text-sky-500 hover:text-sky-400 flex items-center gap-1 cursor-pointer transition-colors"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
               <span>Add Person</span>
             </button>
           )}
         </div>
 
-        {/* Diners Pills */}
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* Diners Chips */}
+        <div className="flex items-center gap-1.5 flex-wrap">
           {participants.length === 0 && !showAddPersonInput && (
             <button
               onClick={() => setShowAddPersonInput(true)}
-              className={`text-xs font-bold px-3 py-1.5 rounded-full border border-dashed transition-all cursor-pointer ${
+              className={`text-xs px-3 py-1.5 rounded-lg border border-dashed transition-all cursor-pointer ${
                 isDark
                   ? 'border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500'
-                  : 'border-sky-300 text-sky-700 hover:bg-sky-50'
+                  : 'border-slate-300 text-slate-600 hover:bg-slate-50 hover:border-slate-400'
               }`}
             >
-              + Add diners splitting this bill
+              + Add people splitting this bill
             </button>
           )}
 
-          {participants.map((person) => (
-            <div
-              key={person.id}
-              className={`flex items-center gap-2 pl-3 pr-2 py-1 rounded-full text-xs font-bold border shadow-sm transition-all ${
-                isDark
-                  ? 'bg-[#1e1e24] text-white border-[#2e2e38]'
-                  : 'bg-white text-slate-800 border-sky-100'
-              }`}
-            >
-              <span
-                className="w-2.5 h-2.5 rounded-full ring-2 ring-white/20 shrink-0"
-                style={{ backgroundColor: person.avatarColor }}
-              />
-              <span>{person.name}</span>
-              <button
-                onClick={() => onRemoveParticipant(person.id)}
-                className="text-zinc-400 hover:text-rose-500 rounded-full p-0.5 ml-1 transition-colors cursor-pointer"
-                title={`Remove ${person.name}`}
+          {participants.map((person) => {
+            const isHovered = highlightedParticipantId === person.id;
+            return (
+              <div
+                key={person.id}
+                onMouseEnter={() => setHighlightedParticipantId(person.id)}
+                onMouseLeave={() => setHighlightedParticipantId(null)}
+                className={`flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-lg text-xs font-medium border transition-all cursor-default select-none ${
+                  isHovered
+                    ? 'ring-2 ring-sky-500 bg-sky-500/10 text-white border-sky-500/30'
+                    : isDark
+                    ? 'bg-[#181920] text-zinc-200 border-white/[0.09] hover:border-white/20'
+                    : 'bg-slate-50 text-slate-800 border-slate-200 hover:border-slate-300'
+                }`}
+                title="Hover to highlight this person's shared items"
               >
-                ×
-              </button>
-            </div>
-          ))}
+                <span
+                  className="w-2 h-2 rounded-full shrink-0"
+                  style={{ backgroundColor: person.avatarColor }}
+                />
+                <span>{person.name}</span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (highlightedParticipantId === person.id) setHighlightedParticipantId(null);
+                    onRemoveParticipant(person.id);
+                  }}
+                  className="text-zinc-400 hover:text-rose-400 p-0.5 rounded cursor-pointer transition-colors text-sm leading-none"
+                  title={`Remove ${person.name}`}
+                >
+                  ×
+                </button>
+              </div>
+            );
+          })}
 
           {showAddPersonInput && (
             <form onSubmit={handleAddPersonSubmit} className="flex items-center gap-1.5">
@@ -261,18 +314,18 @@ export const ReceiptBuilder: React.FC<ReceiptBuilderProps> = ({
                 onChange={(e) => setNewPersonName(e.target.value)}
                 placeholder="Name"
                 autoFocus
-                className="ios-input text-xs font-bold px-3 py-1 rounded-full w-28 focus:outline-none"
+                className="ios-input text-xs font-medium px-2.5 py-1 rounded-lg w-28 focus:outline-none"
               />
               <button
                 type="submit"
-                className="ios-btn-primary text-xs px-3 py-1 rounded-full font-black cursor-pointer shadow-sm"
+                className="ios-btn-primary text-xs px-2.5 py-1 rounded-lg font-semibold cursor-pointer"
               >
                 Add
               </button>
               <button
                 type="button"
                 onClick={() => setShowAddPersonInput(false)}
-                className="text-xs px-1.5 text-zinc-400 hover:text-white cursor-pointer"
+                className="text-xs px-1 text-zinc-400 hover:text-zinc-200 cursor-pointer"
               >
                 ✕
               </button>
@@ -284,37 +337,52 @@ export const ReceiptBuilder: React.FC<ReceiptBuilderProps> = ({
       {/* Quick Add Purchased Item Form: Name, Price, People Splitting */}
       <form
         onSubmit={handleAddItemSubmit}
-        className={`mb-3.5 ios-glass-card rounded-2xl p-3.5 border ${
-          isDark ? 'border-[#2a2a34]' : 'border-sky-100'
+        className={`mb-3.5 ios-glass-card rounded-xl p-3.5 border ${
+          isDark ? 'border-white/[0.08]' : 'border-slate-200/80'
         }`}
       >
-        <span className="text-xs font-black mb-2.5 flex items-center gap-2">
-          <Utensils className="w-4 h-4 text-sky-500" />
-          <span>Add Purchased Item</span>
-        </span>
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-bold flex items-center gap-1.5 text-sky-500">
+            <ShoppingBag className="w-3.5 h-3.5" />
+            <span className={isDark ? 'text-zinc-200' : 'text-slate-800'}>
+              Add Bill Item
+            </span>
+          </span>
+          <span className="text-[10px] text-zinc-400 dark:text-zinc-500 hidden sm:inline">
+            Press Enter ↵ to advance
+          </span>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 mb-2.5">
           {/* Name */}
           <div className="sm:col-span-6">
             <input
+              ref={nameInputRef}
               type="text"
               value={itemName}
               onChange={(e) => setItemName(e.target.value)}
-              placeholder="Item name (e.g. Avocado Toast)"
-              className="w-full ios-input text-xs font-bold px-3 py-2.5 rounded-xl placeholder-zinc-500"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  priceInputRef.current?.focus();
+                }
+              }}
+              placeholder="Item name (e.g. Margherita Pizza)"
+              className="w-full ios-input text-xs font-medium px-3 py-2 rounded-lg"
             />
           </div>
 
           {/* Price with active currency symbol */}
           <div className="sm:col-span-3 relative">
             <span
-              className={`absolute left-3 top-2.5 text-xs font-black select-none pointer-events-none ${
+              className={`absolute left-2.5 top-2 text-xs font-bold select-none pointer-events-none ${
                 isDark ? 'text-zinc-400' : 'text-slate-500'
               }`}
             >
               {currencySymbol}
             </span>
             <input
+              ref={priceInputRef}
               type="number"
               step={activeCurrencyConfig.decimals === 0 ? '1' : '0.01'}
               min={activeCurrencyConfig.decimals === 0 ? '1' : '0.01'}
@@ -322,27 +390,27 @@ export const ReceiptBuilder: React.FC<ReceiptBuilderProps> = ({
               onChange={(e) => setItemPrice(e.target.value)}
               placeholder={activeCurrencyConfig.decimals === 0 ? '0' : '0.00'}
               className={`w-full ios-input text-xs ${
-                currencySymbol.length > 2 ? 'pl-12' : 'pl-7'
-              } pr-2 py-2.5 rounded-xl font-mono font-black`}
+                currencySymbol.length > 2 ? 'pl-11' : 'pl-6'
+              } pr-2 py-2 rounded-lg font-mono font-semibold`}
             />
           </div>
 
           {/* Quantity Stepper */}
           <div
-            className={`sm:col-span-3 flex items-center justify-between ios-input rounded-xl px-2.5 py-1.5`}
+            className={`sm:col-span-3 flex items-center justify-between ios-input rounded-lg px-2 py-1.5`}
           >
             <button
               type="button"
               onClick={() => setItemQuantity((q) => Math.max(1, q - 1))}
-              className="text-zinc-400 hover:text-sky-500 font-black px-2 py-0.5 cursor-pointer text-sm"
+              className="text-zinc-400 hover:text-sky-500 font-bold px-1.5 py-0.5 cursor-pointer text-xs"
             >
               -
             </button>
-            <span className="text-xs font-mono font-black">x{itemQuantity}</span>
+            <span className="text-xs font-mono font-semibold">Qty {itemQuantity}</span>
             <button
               type="button"
               onClick={() => setItemQuantity((q) => q + 1)}
-              className="text-zinc-400 hover:text-sky-500 font-black px-2 py-0.5 cursor-pointer text-sm"
+              className="text-zinc-400 hover:text-sky-500 font-bold px-1.5 py-0.5 cursor-pointer text-xs"
             >
               +
             </button>
@@ -351,15 +419,15 @@ export const ReceiptBuilder: React.FC<ReceiptBuilderProps> = ({
 
         {/* People Splitting this item */}
         <div
-          className={`flex flex-wrap items-center justify-between gap-2 pt-2 border-t mt-2 ${
-            isDark ? 'border-[#2a2a34]' : 'border-sky-100/80'
+          className={`flex flex-wrap items-center justify-between gap-2 pt-2.5 border-t ${
+            isDark ? 'border-white/[0.08]' : 'border-slate-100'
           }`}
         >
           <div className="flex items-center gap-1.5 flex-wrap">
             {participants.length > 0 ? (
               <>
                 <span
-                  className={`text-[11px] font-black ${
+                  className={`text-[11px] font-medium mr-1 ${
                     isDark ? 'text-zinc-400' : 'text-slate-500'
                   }`}
                 >
@@ -372,14 +440,20 @@ export const ReceiptBuilder: React.FC<ReceiptBuilderProps> = ({
                       key={person.id}
                       type="button"
                       onClick={() => toggleAssignee(person.id)}
-                      className={`text-xs px-3 py-1 rounded-full font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      className={`text-xs px-2.5 py-1 rounded-lg font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
                         isSelected
-                          ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20 scale-[1.02]'
+                          ? 'bg-sky-500 text-white shadow-sm'
                           : isDark
-                          ? 'bg-[#1e1e24] text-zinc-300 hover:bg-[#282830] border border-[#2e2e38]'
-                          : 'bg-white text-slate-700 border border-sky-100 hover:bg-sky-50'
+                          ? 'bg-[#181920] text-zinc-300 hover:bg-[#22242e] border border-white/[0.08]'
+                          : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100'
                       }`}
                     >
+                      <span
+                        className="w-1.5 h-1.5 rounded-full"
+                        style={{
+                          backgroundColor: isSelected ? '#ffffff' : person.avatarColor,
+                        }}
+                      />
                       <span>{person.name}</span>
                       {isSelected && <Check className="w-3 h-3 ml-0.5" />}
                     </button>
@@ -388,11 +462,11 @@ export const ReceiptBuilder: React.FC<ReceiptBuilderProps> = ({
               </>
             ) : (
               <span
-                className={`text-[11px] font-semibold ${
-                  isDark ? 'text-zinc-400' : 'text-slate-500'
+                className={`text-[11px] ${
+                  isDark ? 'text-zinc-500' : 'text-slate-400'
                 }`}
               >
-                Add diners above to assign this item
+                Add participants above to split this item
               </span>
             )}
           </div>
@@ -400,21 +474,21 @@ export const ReceiptBuilder: React.FC<ReceiptBuilderProps> = ({
           <button
             type="submit"
             disabled={!itemName.trim() || !itemPrice}
-            className="ios-btn-primary px-4 py-2 rounded-xl text-xs font-black shrink-0 disabled:opacity-40 cursor-pointer shadow-md"
+            className="ios-btn-primary px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0 disabled:opacity-40 cursor-pointer ml-auto"
           >
-            + Add to Bill
+            + Add Item
           </button>
         </div>
       </form>
 
       {/* Bill Items List */}
-      <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+      <div className="flex-1 overflow-y-auto space-y-2.5 pr-0.5">
         {summary.unassignedItemsCount > 0 && (
           <div
-            className={`p-3 rounded-2xl border text-xs flex items-center justify-between shadow-sm ${
+            className={`p-3 rounded-xl border text-xs flex items-center justify-between ${
               isDark
-                ? 'bg-amber-950/30 border-amber-800/80 text-amber-200'
-                : 'bg-amber-50/90 border-amber-200 text-amber-900'
+                ? 'bg-amber-950/20 border-amber-500/30 text-amber-200'
+                : 'bg-amber-50 border-amber-200 text-amber-900'
             }`}
           >
             <div className="flex items-center gap-2">
@@ -427,8 +501,8 @@ export const ReceiptBuilder: React.FC<ReceiptBuilderProps> = ({
                 ({formatCurrency(summary.unassignedTotal, receipt.currency)})
               </span>
             </div>
-            <span className="text-[11px] font-bold text-amber-500">
-              Tap names to split
+            <span className="text-[11px] font-semibold text-amber-500">
+              Select splitters below
             </span>
           </div>
         )}
@@ -436,143 +510,302 @@ export const ReceiptBuilder: React.FC<ReceiptBuilderProps> = ({
         {/* Empty state when no items are on the bill */}
         {receipt.items.length === 0 && (
           <div
-            className={`p-8 text-center rounded-2xl border border-dashed flex flex-col items-center justify-center my-6 ${
+            className={`p-8 text-center rounded-xl border border-dashed flex flex-col items-center justify-center my-4 ${
               isDark
-                ? 'border-[#2e2e38] bg-[#18181e]/60 text-zinc-400'
-                : 'border-sky-200 bg-sky-50/50 text-slate-500'
+                ? 'border-white/[0.08] bg-[#121319]/50 text-zinc-400'
+                : 'border-slate-300 bg-slate-50/50 text-slate-500'
             }`}
           >
-            <div className="w-12 h-12 rounded-2xl bg-sky-500/10 text-sky-500 flex items-center justify-center mb-3">
-              <Receipt className="w-6 h-6 stroke-[2]" />
-            </div>
-            <h3
-              className={`text-sm font-black mb-1 ${
-                isDark ? 'text-white' : 'text-slate-900'
+            <div
+              className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2.5 ${
+                isDark
+                  ? 'bg-zinc-800 text-zinc-300'
+                  : 'bg-slate-100 text-slate-600'
               }`}
             >
-              Clean Bill • No Items Added
+              <FileText className="w-5 h-5" />
+            </div>
+            <h3
+              className={`text-sm font-bold mb-1 ${
+                isDark ? 'text-zinc-200' : 'text-slate-800'
+              }`}
+            >
+              No items on this bill
             </h3>
-            <p className="text-xs max-w-sm mb-4 font-semibold">
-              Add your purchased items, prices, and choose who split them using the form above.
+            <p className="text-xs max-w-sm mb-3">
+              Enter item names, prices, and assign participants above.
             </p>
             <button
               onClick={handleLoadDemo}
-              className="text-xs font-black text-sky-500 hover:text-sky-400 flex items-center gap-1.5 cursor-pointer bg-sky-500/10 px-3.5 py-1.5 rounded-xl transition-all"
+              className="text-xs font-semibold text-sky-500 hover:text-sky-400 flex items-center gap-1.5 cursor-pointer bg-sky-500/10 px-3 py-1.5 rounded-lg transition-colors"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>Load sample dinner items</span>
+              <span>Load sample dinner</span>
             </button>
           </div>
         )}
 
-        {receipt.items.map((item) => {
+        {receipt.items.map((item, idx) => {
           const assignedDiners = participants.filter((p) =>
             item.assignedTo.includes(p.id)
           );
           const isAssigned = assignedDiners.length > 0;
           const costEach = isAssigned ? item.price / assignedDiners.length : item.price;
+          const isHighlighted = highlightedParticipantId ? item.assignedTo.includes(highlightedParticipantId) : false;
+          const isDimmed = highlightedParticipantId ? !item.assignedTo.includes(highlightedParticipantId) : false;
+          const isCurrentlyEditing = editingItemId === item.id;
 
           return (
             <div
               key={item.id}
-              className={`p-4 rounded-2xl transition-all border ${
-                isAssigned
+              className={`p-4 sm:p-4.5 rounded-2xl transition-all duration-200 border participant-lens-highlight ${
+                isHighlighted
+                  ? 'ring-2 ring-sky-500 scale-[1.01] shadow-xl z-10 ' + (isDark ? 'bg-[#181a26] border-sky-500/50' : 'bg-sky-50/50 border-sky-400')
+                  : isDimmed
+                  ? 'opacity-35 scale-[0.99] ' + (isDark ? 'bg-[#14151e] border-white/[0.04]' : 'bg-slate-50 border-slate-200')
+                  : isAssigned
                   ? isDark
-                    ? 'bg-[#1e1e24] border-[#2e2e38] shadow-md'
-                    : 'bg-white/95 border-sky-100 shadow-md'
+                    ? 'bg-[#14151e] border-white/[0.08] shadow-sm hover:border-white/20'
+                    : 'bg-white border-slate-200 shadow-xs hover:border-slate-300'
                   : isDark
-                  ? 'bg-amber-950/20 border-dashed border-amber-600/70'
-                  : 'bg-amber-50/60 border-dashed border-amber-300'
+                  ? 'bg-amber-950/15 border border-dashed border-amber-500/40 shadow-sm'
+                  : 'bg-amber-50/50 border border-dashed border-amber-300'
               }`}
             >
-              <div className="flex items-start justify-between gap-3 mb-2.5">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span
-                      className={`font-black text-sm sm:text-base tracking-tight ${
-                        isDark ? 'text-white' : 'text-slate-900'
-                      }`}
-                    >
-                      {item.name}
+              {isCurrentlyEditing ? (
+                /* Inline Edit Mode */
+                <div className="flex flex-wrap items-center gap-2 mb-3">
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    autoFocus
+                    onKeyDown={(e) => e.key === 'Enter' && handleSaveEditItem(item.id)}
+                    className="ios-input text-xs font-bold px-3 py-2 rounded-lg flex-1 min-w-[160px]"
+                    placeholder="Item name"
+                  />
+                  <div className="relative w-32">
+                    <span className="absolute left-2.5 top-2 text-xs font-bold text-zinc-400 select-none pointer-events-none">
+                      {currencySymbol}
                     </span>
-                    {item.quantity > 1 && (
-                      <span
-                        className={`text-[11px] px-2 py-0.5 rounded-md font-mono font-black ${
-                          isDark
-                            ? 'bg-sky-950/80 text-sky-300 border border-sky-800'
-                            : 'bg-sky-100 text-sky-800'
+                    <input
+                      type="number"
+                      step={activeCurrencyConfig.decimals === 0 ? '1' : '0.01'}
+                      value={editPrice}
+                      onChange={(e) => setEditPrice(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSaveEditItem(item.id)}
+                      className={`ios-input text-xs font-mono font-bold ${
+                        currencySymbol.length > 2 ? 'pl-11' : 'pl-6'
+                      } pr-2 py-2 rounded-lg w-full`}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleSaveEditItem(item.id)}
+                    className="ios-btn-primary text-xs px-3 py-2 rounded-lg font-semibold cursor-pointer"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingItemId(null)}
+                    className="text-xs px-2.5 py-2 text-zinc-400 hover:text-zinc-200 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                /* Standard Card Outlay: Top Information Row */
+                <div className="flex items-start justify-between gap-3 mb-2.5">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono text-[11px] font-bold text-zinc-400 dark:text-zinc-500 select-none">
+                        {(idx + 1).toString().padStart(2, '0')}.
+                      </span>
+                      <h4
+                        onClick={() => handleStartEditItem(item)}
+                        title="Click to edit name or price"
+                        className={`font-extrabold text-sm sm:text-base tracking-tight cursor-pointer hover:underline ${
+                          isDark ? 'text-white' : 'text-slate-900'
                         }`}
                       >
-                        x{item.quantity}
+                        {item.name}
+                      </h4>
+                      {item.quantity > 1 && (
+                        <span
+                          className={`text-[10px] px-2 py-0.5 rounded font-mono font-semibold ${
+                            isDark
+                              ? 'bg-zinc-800 text-zinc-300'
+                              : 'bg-slate-100 text-slate-700'
+                          }`}
+                        >
+                          Qty {item.quantity}
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleStartEditItem(item)}
+                        className="text-zinc-400 hover:text-sky-400 p-0.5 opacity-60 hover:opacity-100 cursor-pointer transition-opacity"
+                        title="Edit item name or price"
+                        aria-label={`Edit ${item.name}`}
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {item.quantity > 1 && (
+                      <span className="text-[11px] text-zinc-400 dark:text-zinc-500 font-mono mt-0.5 block">
+                        {formatCurrency(item.price / item.quantity, receipt.currency)} each
                       </span>
                     )}
                   </div>
 
-                  {isAssigned && assignedDiners.length > 1 && (
-                    <p className="text-xs text-sky-500 font-bold mt-0.5">
-                      Split {assignedDiners.length} ways • {formatCurrency(costEach, receipt.currency)} each
-                    </p>
-                  )}
-                </div>
+                  {/* Price & Action Cluster */}
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className="text-right">
+                      <span
+                        onClick={() => handleStartEditItem(item)}
+                        title="Click to edit price"
+                        className="font-mono font-extrabold text-base sm:text-lg text-slate-950 dark:text-white tabular-nums cursor-pointer hover:text-sky-500 transition-colors block"
+                      >
+                        {formatCurrency(item.price, receipt.currency)}
+                      </span>
+                    </div>
 
-                <div className="flex items-center gap-2.5 shrink-0">
-                  <span className="font-mono font-black text-sm sm:text-lg">
-                    {formatCurrency(item.price, receipt.currency)}
-                  </span>
-                  <button
-                    onClick={() => handleDeleteItem(item.id)}
-                    className="text-zinc-400 hover:text-rose-500 p-1.5 rounded-xl transition-colors cursor-pointer"
-                    title="Remove item"
-                    aria-label={`Remove ${item.name}`}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                    <button
+                      onClick={() => handleDeleteItem(item.id)}
+                      className="text-zinc-400 hover:text-rose-400 p-1 rounded-lg transition-colors cursor-pointer"
+                      title="Remove item"
+                      aria-label={`Remove ${item.name}`}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
+              )}
+
+              {/* Middle Calculation / Status Callout */}
+              <div className="mb-3">
+                {isAssigned ? (
+                  assignedDiners.length > 1 ? (
+                    <div
+                      className={`flex items-center justify-between px-3 py-1.5 rounded-lg border text-xs ${
+                        isDark
+                          ? 'bg-sky-950/20 border-sky-500/25 text-sky-300'
+                          : 'bg-sky-50 border-sky-200 text-sky-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="flex -space-x-1 overflow-hidden">
+                          {assignedDiners.map((diner) => (
+                            <span
+                              key={diner.id}
+                              className="inline-block w-4 h-4 rounded-full ring-1 ring-white dark:ring-zinc-900"
+                              style={{ backgroundColor: diner.avatarColor }}
+                              title={diner.name}
+                            />
+                          ))}
+                        </div>
+                        <span className="font-semibold">
+                          Split {assignedDiners.length} ways ({assignedDiners.map((d) => d.name).join(', ')})
+                        </span>
+                      </div>
+                      <span className="font-mono font-bold tabular-nums">
+                        {formatCurrency(costEach, receipt.currency)} each
+                      </span>
+                    </div>
+                  ) : (
+                    <div
+                      className={`flex items-center justify-between px-3 py-1.5 rounded-lg border text-xs ${
+                        isDark
+                          ? 'bg-[#181924] border-white/5 text-zinc-300'
+                          : 'bg-slate-50 border-slate-200 text-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ backgroundColor: assignedDiners[0].avatarColor }}
+                        />
+                        <span className="font-medium">
+                          Allocated to <strong className="text-white dark:text-white">{assignedDiners[0].name}</strong>
+                        </span>
+                      </div>
+                      <span className="font-mono font-semibold">100% share</span>
+                    </div>
+                  )
+                ) : (
+                  <div
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs ${
+                      isDark
+                        ? 'bg-amber-950/30 border-amber-500/30 text-amber-300'
+                        : 'bg-amber-50 border-amber-200 text-amber-800'
+                    }`}
+                  >
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span className="font-medium">
+                      Unassigned item ({formatCurrency(item.price, receipt.currency)}) · Tap participants below to split
+                    </span>
+                  </div>
+                )}
               </div>
 
-              {/* People Splitting Chips */}
+              {/* Bottom Participant Splitting Strip */}
               <div
-                className={`pt-2.5 border-t flex flex-wrap items-center justify-between gap-2 ${
-                  isDark ? 'border-[#2a2a34]' : 'border-sky-50'
+                className={`pt-2.5 border-t flex flex-wrap items-center justify-between gap-2.5 ${
+                  isDark ? 'border-white/[0.06]' : 'border-slate-100'
                 }`}
               >
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  {participants.map((person) => {
-                    const isPersonAssigned = item.assignedTo.includes(person.id);
-                    return (
-                      <button
-                        key={person.id}
-                        onClick={() => onToggleItemAssignment(item.id, person.id)}
-                        className={`flex items-center gap-1.5 text-xs px-3 py-1 rounded-full font-bold transition-all cursor-pointer ${
-                          isPersonAssigned
-                            ? 'bg-sky-500 text-white shadow-md shadow-sky-500/25 scale-[1.02]'
-                            : isDark
-                            ? 'bg-[#18181e] text-zinc-300 border border-[#2e2e38] hover:bg-[#25252d]'
-                            : 'bg-sky-50/90 text-slate-700 border border-sky-100 hover:bg-sky-100'
-                        }`}
-                      >
-                        <span
-                          className={`w-2 h-2 rounded-full ${
-                            isPersonAssigned ? 'bg-white' : ''
+                  <span
+                    className={`text-[11px] font-semibold mr-1 select-none ${
+                      isDark ? 'text-zinc-400' : 'text-slate-500'
+                    }`}
+                  >
+                    Split with:
+                  </span>
+                  {participants.length === 0 ? (
+                    <span className="text-[11px] text-zinc-500 italic">
+                      Add participants above to assign
+                    </span>
+                  ) : (
+                    participants.map((person) => {
+                      const isPersonAssigned = item.assignedTo.includes(person.id);
+                      return (
+                        <button
+                          key={person.id}
+                          onClick={() => onToggleItemAssignment(item.id, person.id)}
+                          className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer ${
+                            isPersonAssigned
+                              ? 'bg-sky-500 text-white shadow-xs'
+                              : isDark
+                              ? 'bg-[#181920] text-zinc-300 border border-white/[0.08] hover:bg-[#20222a] hover:text-white'
+                              : 'bg-slate-50 text-slate-700 border border-slate-200 hover:bg-slate-100 hover:text-slate-900'
                           }`}
-                          style={{
-                            backgroundColor: isPersonAssigned
-                              ? '#ffffff'
-                              : person.avatarColor,
-                          }}
-                        />
-                        <span>{person.name}</span>
-                        {isPersonAssigned && <Check className="w-3 h-3 ml-0.5" />}
-                      </button>
-                    );
-                  })}
+                        >
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{
+                              backgroundColor: isPersonAssigned
+                                ? '#ffffff'
+                                : person.avatarColor,
+                            }}
+                          />
+                          <span>{person.name}</span>
+                          {isPersonAssigned && <Check className="w-3 h-3 ml-0.5" />}
+                        </button>
+                      );
+                    })
+                  )}
                 </div>
 
-                <div className="flex items-center gap-2.5 text-xs font-black text-sky-500">
+                <div className="flex items-center gap-2.5 text-xs font-bold text-sky-500 shrink-0 ml-auto">
                   {participants.length > 1 && (
                     <button
                       onClick={() => onAssignItemToAll(item.id)}
                       className="hover:underline cursor-pointer"
+                      title="Split this item equally among everyone"
                     >
                       Split All
                     </button>
@@ -580,7 +813,8 @@ export const ReceiptBuilder: React.FC<ReceiptBuilderProps> = ({
                   {isAssigned && (
                     <button
                       onClick={() => onClearItemAssignment(item.id)}
-                      className="text-zinc-400 hover:text-rose-500 cursor-pointer"
+                      className="text-zinc-400 hover:text-rose-400 cursor-pointer transition-colors"
+                      title="Clear split assignments"
                     >
                       Clear
                     </button>
@@ -592,23 +826,23 @@ export const ReceiptBuilder: React.FC<ReceiptBuilderProps> = ({
         })}
       </div>
 
-      {/* Bill Summary Footer (Pure items sum, zero tax, zero tips) */}
+      {/* Bill Summary Footer */}
       <div
         className={`pt-3.5 mt-2 border-t flex items-center justify-between ${
-          isDark ? 'border-[#2a2a34]' : 'border-sky-100'
+          isDark ? 'border-white/[0.08]' : 'border-slate-200/80'
         }`}
       >
         <div>
-          <span className="text-sm font-black block tracking-tight">Total Bill Due</span>
+          <span className="text-sm font-bold block tracking-tight">Total Bill Due</span>
           <span
-            className={`text-xs font-semibold ${
+            className={`text-xs ${
               isDark ? 'text-zinc-400' : 'text-slate-500'
             }`}
           >
-            Pure item sum • Zero tax, zero tip
+            Direct item sum ({receipt.currency})
           </span>
         </div>
-        <span className="font-mono text-xl sm:text-2xl font-black text-sky-500">
+        <span className="font-mono text-xl font-bold text-sky-500">
           {formatCurrency(summary.grandTotal, receipt.currency)}
         </span>
       </div>
@@ -616,11 +850,11 @@ export const ReceiptBuilder: React.FC<ReceiptBuilderProps> = ({
       {onViewReceipt && (
         <button
           onClick={onViewReceipt}
-          className="w-full mt-3 py-3 rounded-2xl ios-btn-primary flex items-center justify-center gap-2 text-xs sm:text-sm font-black cursor-pointer shadow-md"
+          className="w-full mt-3 py-2.5 rounded-xl ios-btn-primary flex items-center justify-center gap-2 text-xs sm:text-sm font-bold cursor-pointer"
         >
-          <Receipt className="w-4 h-4" />
+          <FileText className="w-4 h-4" />
           <span>View Receipt</span>
-          <span className="font-mono opacity-85 font-bold">
+          <span className="font-mono opacity-90 font-medium">
             ({formatCurrency(summary.grandTotal, receipt.currency)})
           </span>
           <span className="text-base leading-none">→</span>

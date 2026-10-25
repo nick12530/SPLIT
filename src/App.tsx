@@ -3,6 +3,7 @@ import { Header } from './components/Header';
 import { ReceiptBuilder } from './components/ReceiptBuilder';
 import { ReceiptPrinterAnimator } from './components/ReceiptPrinterAnimator';
 import { ShareModal } from './components/ShareModal';
+import { ReceiptScannerModal } from './components/ReceiptScannerModal';
 import { SampleReceiptOption } from './utils/sampleReceipts';
 import {
   calculateBillSummary,
@@ -14,7 +15,7 @@ import {
   ReceiptItem,
   CurrencyCode,
 } from './types';
-import { Receipt, Printer } from 'lucide-react';
+import { Receipt, FileText } from 'lucide-react';
 
 export default function App() {
   const [isDark, setIsDark] = useState<boolean>(() => {
@@ -36,7 +37,7 @@ export default function App() {
     return 'USD';
   });
 
-  // Clean slate: 0 mock items, clean bill ready for user input
+  // Clean slate: clean bill ready for user input
   const [receipt, setReceipt] = useState<ReceiptData>(() => {
     const formattedDate = new Date().toLocaleDateString('en-US', {
       month: 'short',
@@ -53,10 +54,10 @@ export default function App() {
     };
   });
 
-  // Clean state: start empty or let user add people splitting
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [activeTab, setActiveTab] = useState<'items' | 'receipt'>('items');
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isScanOpen, setIsScanOpen] = useState(false);
 
   // Sync initial stored currency into receipt
   useEffect(() => {
@@ -80,7 +81,7 @@ export default function App() {
     }));
   };
 
-  // Real-time pure item calculations (zero tips, zero tax)
+  // Real-time pure item calculations
   const summary = useMemo(() => {
     return calculateBillSummary(receipt, participants);
   }, [receipt, participants]);
@@ -160,7 +161,6 @@ export default function App() {
     const cloned = JSON.parse(JSON.stringify(sample.data));
     cloned.currency = currency;
     setReceipt(cloned);
-    // If no participants exist yet, add standard diners for the sample
     if (participants.length === 0) {
       setParticipants([
         { id: 'p-1', name: 'Alex', avatarColor: getAvatarColor(0) },
@@ -187,13 +187,43 @@ export default function App() {
     setParticipants([]);
   };
 
+  const handleImportScannedItems = (
+    newItems: ReceiptItem[],
+    detectedTitle?: string,
+    detectedCurrency?: CurrencyCode
+  ) => {
+    const updatedItems = [...receipt.items, ...newItems];
+    const newTotal = updatedItems.reduce((acc, it) => acc + it.price, 0);
+
+    setReceipt((prev) => ({
+      ...prev,
+      billTitle: detectedTitle || prev.billTitle,
+      items: updatedItems,
+      total: newTotal,
+      currency: detectedCurrency || prev.currency,
+    }));
+
+    if (detectedCurrency) {
+      setCurrency(detectedCurrency);
+      localStorage.setItem('spliteasy_currency', detectedCurrency);
+    }
+
+    // Default 2-3 participants if none exist yet to immediately enable splitting
+    if (participants.length === 0) {
+      setParticipants([
+        { id: 'p-1', name: 'Alex', avatarColor: getAvatarColor(0) },
+        { id: 'p-2', name: 'Sam', avatarColor: getAvatarColor(1) },
+      ]);
+    }
+  };
+
   return (
     <div
-      className={`min-h-screen flex flex-col font-sans select-none transition-colors duration-300 ${
+      className={`min-h-screen flex flex-col font-sans transition-colors duration-250 ${
         isDark ? 'theme-dark' : 'theme-light'
       }`}
     >
-      {/* Top iOS Header (Non-overlapping, pinned at top-0) */}
+      {/* Top Header */}
       <Header
         summary={summary}
         billTitle={receipt.billTitle}
@@ -202,42 +232,63 @@ export default function App() {
         onCurrencyChange={handleCurrencyChange}
         onToggleTheme={toggleTheme}
         onSelectSample={handleSelectSample}
+        onOpenScan={() => setIsScanOpen(true)}
         onOpenShare={() => setIsShareOpen(true)}
         onReset={handleReset}
       />
 
-      {/* Main Single-Column Tabbed Workspace (No Side Slider) */}
-      <main className="flex-1 max-w-3xl w-full mx-auto p-3.5 sm:p-6 flex flex-col gap-4">
-        {/* Workspace Tab Switcher (Visible on all screen sizes) */}
-        <div className="flex p-1.5 rounded-2xl ios-segmented shadow-sm text-xs font-black">
+      {/* Main Single-Column Tabbed Workspace */}
+      <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-5 sm:px-6 flex flex-col gap-4">
+        {/* Workspace Tab Switcher */}
+        <div className="flex p-1 rounded-xl ios-segmented text-xs font-semibold">
           <button
             onClick={() => setActiveTab('items')}
-            className={`flex-1 py-3 flex items-center justify-center gap-2 rounded-xl transition-all cursor-pointer ${
+            className={`flex-1 py-2.5 flex items-center justify-center gap-2 rounded-lg transition-all cursor-pointer ${
               activeTab === 'items'
-                ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/25 scale-[1.01]'
+                ? isDark
+                  ? 'bg-[#1e2029] text-white shadow-sm border border-white/10'
+                  : 'bg-white text-slate-900 shadow-sm border border-slate-200/80 font-bold'
                 : isDark
-                ? 'text-zinc-400 hover:text-white'
+                ? 'text-zinc-400 hover:text-zinc-200'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Receipt className="w-4 h-4" />
-            <span>Bill Items ({receipt.items.length})</span>
+            <Receipt className="w-4 h-4 text-sky-500" />
+            <span>Bill Items</span>
+            <span
+              className={`font-mono text-[11px] px-1.5 py-0.5 rounded ${
+                activeTab === 'items'
+                  ? isDark
+                    ? 'bg-zinc-800 text-zinc-300'
+                    : 'bg-slate-100 text-slate-700'
+                  : isDark
+                  ? 'bg-zinc-900 text-zinc-500'
+                  : 'bg-slate-200/60 text-slate-500'
+              }`}
+            >
+              {receipt.items.length}
+            </span>
             {summary.unassignedItemsCount > 0 && (
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-amber-400"
+                title={`${summary.unassignedItemsCount} unassigned`}
+              />
             )}
           </button>
 
           <button
             onClick={() => setActiveTab('receipt')}
-            className={`flex-1 py-3 flex items-center justify-center gap-2 rounded-xl transition-all cursor-pointer ${
+            className={`flex-1 py-2.5 flex items-center justify-center gap-2 rounded-lg transition-all cursor-pointer ${
               activeTab === 'receipt'
-                ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/25 scale-[1.01]'
+                ? isDark
+                  ? 'bg-[#1e2029] text-white shadow-sm border border-white/10'
+                  : 'bg-white text-slate-900 shadow-sm border border-slate-200/80 font-bold'
                 : isDark
-                ? 'text-zinc-400 hover:text-white'
+                ? 'text-zinc-400 hover:text-zinc-200'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            <Printer className="w-4 h-4" />
+            <FileText className="w-4 h-4 text-sky-500" />
             <span>Receipt</span>
           </button>
         </div>
@@ -260,18 +311,18 @@ export default function App() {
               onViewReceipt={() => setActiveTab('receipt')}
             />
 
-            {/* Quick Tab Switcher also below the Bill Items */}
+            {/* Quick Tab Switcher below the Bill Items */}
             <div className="flex justify-center pt-1 pb-4">
               <button
                 onClick={() => setActiveTab('receipt')}
-                className={`text-xs font-black px-5 py-2.5 rounded-2xl border transition-all cursor-pointer flex items-center gap-2 shadow-sm ${
+                className={`text-xs font-semibold px-4 py-2 rounded-lg border transition-all cursor-pointer flex items-center gap-2 ${
                   isDark
-                    ? 'bg-[#1a1a20] border-[#2e2e38] text-sky-400 hover:bg-[#25252e]'
-                    : 'bg-white border-sky-200 text-sky-600 hover:bg-sky-50'
+                    ? 'bg-[#14151b] border-white/10 text-sky-400 hover:bg-[#1c1d25]'
+                    : 'bg-white border-slate-200 text-sky-600 hover:bg-slate-50'
                 }`}
               >
-                <Printer className="w-4 h-4" />
-                <span>Switch to Receipt Tab</span>
+                <FileText className="w-4 h-4" />
+                <span>Switch to Receipt</span>
                 <span className="font-mono text-zinc-400">→</span>
               </button>
             </div>
@@ -291,10 +342,10 @@ export default function App() {
             <div className="flex justify-center pt-1 pb-4">
               <button
                 onClick={() => setActiveTab('items')}
-                className={`text-xs font-black px-5 py-2.5 rounded-2xl border transition-all cursor-pointer flex items-center gap-2 shadow-sm ${
+                className={`text-xs font-semibold px-4 py-2 rounded-lg border transition-all cursor-pointer flex items-center gap-2 ${
                   isDark
-                    ? 'bg-[#1a1a20] border-[#2e2e38] text-zinc-300 hover:text-white hover:bg-[#25252e]'
-                    : 'bg-white border-sky-200 text-slate-700 hover:bg-sky-50'
+                    ? 'bg-[#14151b] border-white/10 text-zinc-300 hover:text-white hover:bg-[#1c1d25]'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
               >
                 <Receipt className="w-4 h-4 text-sky-500" />
@@ -305,12 +356,21 @@ export default function App() {
         )}
       </main>
 
-      {/* Share / Export Modal (Includes 'Share via QR Code' button) */}
+      {/* Share / Export Modal */}
       <ShareModal
         isOpen={isShareOpen}
         onClose={() => setIsShareOpen(false)}
         summary={summary}
         receipt={receipt}
+        isDark={isDark}
+      />
+
+      {/* Camera Receipt Scanner Modal */}
+      <ReceiptScannerModal
+        isOpen={isScanOpen}
+        onClose={() => setIsScanOpen(false)}
+        onImportItems={handleImportScannedItems}
+        currency={currency}
         isDark={isDark}
       />
     </div>
